@@ -1,10 +1,13 @@
-import { BreadCrumb, ExceptionOptions, MessageOptions, SentryUser } from './';
+import { BreadCrumb, ExceptionOptions, MessageOptions, SentryInitOptions, User } from './';
 export declare class Sentry {
     static init(dsn: string): void;
+    static initWithOptions(options: SentryInitOptions): void;
     static captureMessage(message: string, options?: MessageOptions): void;
     static captureException(exception: Error, options?: ExceptionOptions): void;
     static captureBreadcrumb(breadcrumb: BreadCrumb): void;
-    static setContextUser(user: SentryUser): void;
+    static setUser(user: User): void;
+    static setContextUser(user: User): void;
+    static setTags(tags: object): void;
     static setContextTags(tags: object): void;
     static setContextExtra(extra: object): void;
     static clearContext(): void;

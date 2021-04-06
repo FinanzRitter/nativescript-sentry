@@ -1,17 +1,22 @@
-import { BreadCrumb, ExceptionOptions, MessageOptions, SentryUser } from './';
+import { BreadCrumb, ExceptionOptions, MessageOptions, SentryInitOptions, User } from './';
 
 export class Sentry {
   public static init(dsn: string) {
-    SentryClient.sharedClient = SentryClient.alloc().initWithDsnDidFailWithError(dsn);
-    SentryClient.sharedClient.startCrashHandlerWithError();
-    SentryClient.sharedClient.enableAutomaticBreadcrumbTracking();
+    this.initWithOptions({dsn});
+  }
+
+  public static initWithOptions(options: SentryInitOptions) {
+    const dict = NSDictionary.dictionaryWithDictionary(options as any as NSDictionary<string, any>);
+    const sentryOptions = SentryOptions.alloc().initWithDictDidFailWithError(dict);
+    SentrySDK.startWithOptionsObject(sentryOptions);
   }
 
   public static captureMessage(message: string, options?: MessageOptions) {
     const level = options && options.level ? options.level : null;
 
     const event = SentryEvent.alloc().initWithLevel(this._convertSentryLevel(level));
-    event.message = message;
+
+    event.message = SentryMessage.alloc().initWithFormatted(message);
 
     if (options && options.extra) {
       event.extra = NSDictionary.dictionaryWithDictionary(options.extra as NSDictionary<string, any>);
@@ -20,32 +25,29 @@ export class Sentry {
     if (options && options.tags) {
       event.tags = NSDictionary.dictionaryWithDictionary(options.tags as NSDictionary<string, string>);
     }
-    SentryClient.sharedClient.sendEventWithCompletionHandler(event, () => {
-      // nothing here
-    });
+
+    SentrySDK.captureEvent(event);
   }
 
   public static captureException(exception: Error, options?: ExceptionOptions) {
-    const event = SentryEvent.alloc().initWithLevel(SentrySeverity.kSentrySeverityError);
+    const event = SentryEvent.alloc().initWithLevel(SentryLevel.kSentryLevelError);
 
     // create a string of the entire Error for sentry to display as much info as possible
-    event.message = JSON.stringify({
+    event.message = SentryMessage.alloc().initWithFormatted(JSON.stringify({
       message: exception.message,
       stacktrace: exception.stack,
       name: exception.name
-    });
+    }));
 
     if (options && options.extra) {
-      event.extra = NSDictionary.dictionaryWithDictionary(options.extra as NSDictionary<string, any>);
+      event.extra = NSDictionary.alloc<string, any>().initWithDictionary(options.extra as any);
     }
 
     if (options && options.tags) {
-      event.tags = NSDictionary.dictionaryWithDictionary(options.tags as NSDictionary<string, string>);
+      event.tags = NSDictionary.alloc<string, any>().initWithDictionary(options.tags as any);
     }
 
-    SentryClient.sharedClient.sendEventWithCompletionHandler(event, () => {
-      // nothing here
-    });
+    SentrySDK.captureEvent(event);
   }
 
   public static captureBreadcrumb(breadcrumb: BreadCrumb) {
@@ -55,30 +57,48 @@ export class Sentry {
       breadcrumb.category
     );
     sentryBC.message = breadcrumb.message;
-    SentryClient.sharedClient.breadcrumbs.addBreadcrumb(sentryBC);
+    SentrySDK.addBreadcrumb(sentryBC);
   }
 
-  public static setContextUser(user: SentryUser) {
+  public static setUser(user: User) {
     const userNative = SentryUser.alloc().initWithUserId(user.id);
     userNative.email = user.email ? user.email : '';
     userNative.username = user.username ? user.username : '';
     if (user.data) {
-      // create NSDictionary<string, any> for the object provided
-      const dict = NSDictionary.dictionaryWithDictionary(user.data as NSDictionary<string, any>);
-      userNative.extra = dict ? dict : null;
+      const dict = NSDictionary.alloc<string, any>().initWithDictionary(user.data as any);
+      userNative.data = dict;
     }
-    SentryClient.sharedClient.user = userNative;
+    SentrySDK.setUser(userNative);
+  }
+
+  public static setContextUser(user: User) {
+    this.setUser(user);
+  }
+
+  public static setTags(tags: any) {
+    SentrySDK.configureScope((scope) => {
+      scope.setTags(NSDictionary.dictionaryWithDictionary(tags as NSDictionary<string, string>));
+    });
   }
 
   public static setContextTags(tags: any) {
-    SentryClient.sharedClient.tags = NSDictionary.dictionaryWithDictionary(tags as NSDictionary<string, string>);
+    this.setTags(tags);
   }
+
+  public static setExtras(extra: any) {
+    SentrySDK.configureScope((scope) => {
+      scope.setExtras(NSDictionary.dictionaryWithDictionary(extra as NSDictionary<string, any>));
+    });
+  }
+
   public static setContextExtra(extra: any) {
-    SentryClient.sharedClient.extra = NSDictionary.dictionaryWithDictionary(extra as NSDictionary<string, any>);
+    this.setExtras(extra);
   }
 
   public static clearContext() {
-    SentryClient.sharedClient.clearContext();
+    SentrySDK.configureScope((scope) => {
+      scope.clear();
+    });
   }
 
   /**
@@ -86,23 +106,19 @@ export class Sentry {
    * @default - INFO
    */
   private static _convertSentryLevel(level: Level) {
-    if (!level) {
-      return SentrySeverity.kSentrySeverityInfo;
-    }
-
     switch (level) {
       case Level.Info:
-        return SentrySeverity.kSentrySeverityInfo;
+        return SentryLevel.kSentryLevelInfo;
       case Level.Warning:
-        return SentrySeverity.kSentrySeverityWarning;
+        return SentryLevel.kSentryLevelWarning;
       case Level.Fatal:
-        return SentrySeverity.kSentrySeverityFatal;
+        return SentryLevel.kSentryLevelFatal;
       case Level.Error:
-        return SentrySeverity.kSentrySeverityError;
+        return SentryLevel.kSentryLevelError;
       case Level.Debug:
-        return SentrySeverity.kSentrySeverityDebug;
+        return SentryLevel.kSentryLevelDebug;
       default:
-        return SentrySeverity.kSentrySeverityInfo;
+        return SentryLevel.kSentryLevelInfo;
     }
   }
 }
