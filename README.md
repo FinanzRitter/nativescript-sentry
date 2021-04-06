@@ -26,7 +26,7 @@ ns plugin add nativescript-sentry
 Add the following line to your `AndroidManifest.xml` within the `<application>-tag`:
 
 ```xml
-<meta-data android:name="io.sentry.dsn" android:value="__YOUR_DSN_HERE__" />
+<meta-data android:name="io.sentry.auto-init" android:value="false" />
 ```
 
 ### Without Angular
@@ -127,7 +127,7 @@ export interface BreadCrumb {
 ### Set user
 
 ```typescript
-Sentry.setContextUser(user: SentryUser)
+Sentry.setUser(user: SentryUser)
 ```
 
 ```typescript
@@ -141,13 +141,13 @@ export interface SentryUser {
 ### Set tags
 
 ```typescript
-Sentry.setContextTags(tags: object)
+Sentry.setTags(tags: object)
 ```
 
 ### Set extra information
 
 ```typescript
-Sentry.setContextExtra(extra: object)
+Sentry.setExtras(extra: object)
 ```
 
 ### Clear context (user, tags, extra information)
