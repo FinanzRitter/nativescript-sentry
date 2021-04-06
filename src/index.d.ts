@@ -6,7 +6,7 @@ export enum Level {
   Debug = 'debug'
 }
 
-export interface SentryUser {
+export interface User {
   id: string;
   email?: string;
   username?: string;
