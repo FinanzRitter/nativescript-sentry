@@ -120,10 +120,13 @@ export class Sentry {
   }
 
   public static clearContext() {
-    // @ts-ignore
-    io.sentry.Sentry.configureScope((scope: io.sentry.Scope) => {
-      scope.clear();
-    });
+    const scopeCallBack = new io.sentry.ScopeCallback({
+      run: (scope) => {
+        scope.clear();
+      }
+    })
+
+    io.sentry.Sentry.configureScope(scopeCallBack);
   }
 
   /**
