@@ -99,17 +99,38 @@ export abstract class Sentry {
    * Set a user to the Sentry context.
    * @param user [SentryUser] - The user to set with the current Sentry context.
    */
-  static setContextUser(user: SentryUser): void;
+  static setUser(user: User): void;
+
+  /**
+   * Set a user to the Sentry context.
+   * @param user [SentryUser] - The user to set with the current Sentry context.
+   * @deprecated Use setUser instead.
+   */
+  static setContextUser(user: User): void;
 
   /**
    * Set an object of additional Key/value pairs which generate breakdowns charts and search filters.
    * @param tags [object] - Object of additional Key/value pairs.
+   */
+  static setTags(tags: object): void;
+
+  /**
+   * Set an object of additional Key/value pairs which generate breakdowns charts and search filters.
+   * @param tags [object] - Object of additional Key/value pairs.
+   * @deprecated Use setTags instead.
    */
   static setContextTags(tags: object): void;
 
   /**
    * Set an object of unstructured data which is stored with events for the current Sentry context.
    * @param extra [object] - An arbitrary object of Key/value pairs.
+   */
+  static setExtras(extra: object): void;
+
+  /**
+   * Set an object of unstructured data which is stored with events for the current Sentry context.
+   * @param extra [object] - An arbitrary object of Key/value pairs.
+   * @deprecated Use setExtras instead.
    */
   static setContextExtra(extra: object): void;
 
