@@ -9,6 +9,7 @@ export declare class Sentry {
     static setContextUser(user: User): void;
     static setTags(tags: object): void;
     static setContextTags(tags: object): void;
+    static setExtras(extras: object): void;
     static setContextExtra(extra: object): void;
     static clearContext(): void;
     private static _convertSentryEventLevel;
