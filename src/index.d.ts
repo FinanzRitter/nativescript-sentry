@@ -45,12 +45,35 @@ export interface ExceptionOptions {
   extra?: object;
 }
 
+export interface SentryInitOptions {
+  /**
+   * The client DSN key for the Sentry project.
+   */
+  dsn: string;
+
+  /**
+   * [optional] The environment to tag all events with.
+   */
+  environment?: string;
+
+  /**
+   * [optional] The release to tag all events with.
+   */
+  release?: string;
+}
+
 export abstract class Sentry {
   /**
    * Initializes the Sentry SDK for the provided DSN key.
    * @param dsn [string] - The client DSN key for the Sentry project.
    */
   static init(dsn: string): void;
+
+  /**
+   * Initializes the Sentry SDK with the provided options.
+   * @param options [SentryInitOptions] - The Sentry options to initialize with.
+   */
+  static initWithOptions(options: SentryInitOptions): void;
 
   /**
    * Log a message.
