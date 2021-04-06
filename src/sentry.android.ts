@@ -49,11 +49,11 @@ export class Sentry {
   public static captureException(exception: Error, options?: ExceptionOptions) {
     // TODO: attach tags and extra directly on the exeption
     if (options && options.extra) {
-      this.setContextExtra(options.extra);
+      this.setExtras(options.extra);
     }
 
     if (options && options.tags) {
-      this.setContextTags(options.tags);
+      this.setTags(options.tags);
     }
 
     const cause = new java.lang.Throwable(exception.stack);
@@ -111,12 +111,16 @@ export class Sentry {
     this.setTags(tags);
   }
 
-  public static setContextExtra(extra: object) {
-    Object.keys(extra).forEach(key => {
+  public static setExtras(extras: object) {
+    Object.keys(extras).forEach(key => {
       // adding type check to not force toString on the extra
-      const nativeDataValue = Sentry._convertDataTypeToString(extra[key]);
+      const nativeDataValue = Sentry._convertDataTypeToString(extras[key]);
       io.sentry.Sentry.setExtra(key, nativeDataValue);
     });
+  }
+
+  public static setContextExtra(extra: object) {
+    this.setExtras(extra);
   }
 
   public static clearContext() {
@@ -124,7 +128,7 @@ export class Sentry {
       run: (scope) => {
         scope.clear();
       }
-    })
+    });
 
     io.sentry.Sentry.configureScope(scopeCallBack);
   }
