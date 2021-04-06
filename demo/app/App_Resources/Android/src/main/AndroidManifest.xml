@@ -25,7 +25,7 @@
 		android:label="@string/app_name"
 		android:theme="@style/AppTheme">
 
-		<meta-data android:name="io.sentry.dsn" android:value="__YOUR_DSN_HERE__" />
+		<meta-data android:name="io.sentry.auto-init" android:value="false" />
 
 		<activity
 			android:name="com.tns.NativeScriptActivity"

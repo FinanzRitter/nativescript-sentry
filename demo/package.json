@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "@nativescript/core": "7.0.0",
+    "@nativescript/core": "7.3.0",
     "@nativescript/theme": "^2.5.0",
     "nativescript-sentry": "file:../src",
     "nativescript-unit-test-runner": "^0.7.0"
   },
   "devDependencies": {
-    "@nativescript/android": "7.0.0",
+    "@nativescript/android": "7.0.1",
     "@nativescript/ios": "7.2.0",
     "@nativescript/types": "^7.3.0",
     "@nativescript/webpack": "^3.0.9",
