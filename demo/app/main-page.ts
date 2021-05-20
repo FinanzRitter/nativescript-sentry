@@ -14,17 +14,13 @@ export function pageLoaded(args: EventData) {
 }
 
 export function setSentryUser() {
-  Sentry.setContextUser({
+  Sentry.setUser({
     id: '19210029akd01jjd9102',
     email: obsData.get('user_email'),
     data: {
       bool_value: false,
       string_value: 'test string',
-      number_value: 35,
-      created: {
-        date: 'January 1, 1999',
-        picture_url: 'https://docs.sentry.io/'
-      }
+      number_value: 35
     }
   });
 }

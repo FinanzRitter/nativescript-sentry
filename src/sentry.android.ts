@@ -1,30 +1,28 @@
-import { BreadCrumb, ExceptionOptions, MessageOptions, SentryUser } from './';
-
+import { BreadCrumb, ExceptionOptions, MessageOptions, SentryInitOptions, User } from './';
 export class Sentry {
-  /**
-   * @deprecated - Set your public DSN in your app's AndroidManifest file.
-   * @link https://github.com/FinanzRitter/nativescript-sentry#android for more information
-   * @param dsn
-   */
   public static init(dsn: string) {
-    // Starting with sentry-android 2.0.0 the init method of Sentry does not work out of the box
-    // with NativeScript. This is because it is not possible to call a Java/Kotlin Lambda function
-    // from NativeScript.
-    // Instead configure the DSN and further config in your AndroidManifest.xml.
-    // Add <meta-data android:name="io.sentry.dsn" android:value="__YOUR_DSN_HERE__" /> within the
-    // application tag.
+    this.initWithOptions({dsn});
+  }
+
+  public static initWithOptions(options: SentryInitOptions) {
+    const sentryOptions = new io.sentry.SentryOptions();
+    sentryOptions.setDsn(options.dsn);
+    if (options.environment) sentryOptions.setEnvironment(options.environment);
+    if (options.release) sentryOptions.setRelease(options.release);
+
+    io.sentry.Sentry.init(sentryOptions);
   }
 
   public static captureMessage(message: string, options?: MessageOptions) {
     // Create event
-    const event = new io.sentry.core.SentryEvent();
+    const event = new io.sentry.SentryEvent();
 
     // Set level
     const level = options && options.level ? options.level : null;
     event.setLevel(this._convertSentryEventLevel(level));
 
     // Set message
-    const msg = new io.sentry.core.protocol.Message();
+    const msg = new io.sentry.protocol.Message();
     msg.setMessage(message);
     event.setMessage(msg);
 
@@ -45,17 +43,17 @@ export class Sentry {
     }
 
     // Send event
-    io.sentry.core.Sentry.captureEvent(event);
+    io.sentry.Sentry.captureEvent(event);
   }
 
   public static captureException(exception: Error, options?: ExceptionOptions) {
     // TODO: attach tags and extra directly on the exeption
     if (options && options.extra) {
-      this.setContextExtra(options.extra);
+      this.setExtras(options.extra);
     }
 
     if (options && options.tags) {
-      this.setContextTags(options.tags);
+      this.setTags(options.tags);
     }
 
     const cause = new java.lang.Throwable(exception.stack);
@@ -64,21 +62,21 @@ export class Sentry {
     // JS Error stacktrace as the "cause" and the JS Error message as the Throwable "message"
     // https://developer.android.com/reference/java/lang/Exception.html#Exception(java.lang.String,%20java.lang.Throwable)
     const ex = new java.lang.Exception(exception.message, cause);
-    io.sentry.core.Sentry.captureException(ex);
+    io.sentry.Sentry.captureException(ex);
   }
 
   public static captureBreadcrumb(breadcrumb: BreadCrumb) {
     // Create BreadCrumb
-    const nativeBreadCrumb = new io.sentry.core.Breadcrumb();
+    const nativeBreadCrumb = new io.sentry.Breadcrumb();
     nativeBreadCrumb.setLevel(this._convertSentryEventLevel(breadcrumb.level));
     nativeBreadCrumb.setCategory(breadcrumb.category);
     nativeBreadCrumb.setMessage(breadcrumb.message);
 
     // Add BreadCrumb
-    io.sentry.core.Sentry.addBreadcrumb(nativeBreadCrumb);
+    io.sentry.Sentry.addBreadcrumb(nativeBreadCrumb);
   }
 
-  public static setContextUser(user: SentryUser) {
+  public static setUser(user: User) {
     // handle the data object if provided
     let nativeMapObject: java.util.HashMap<any, any>;
     if (user.data) {
@@ -89,32 +87,50 @@ export class Sentry {
       });
     }
 
-    const nativeUser = new io.sentry.core.protocol.User();
+    const nativeUser = new io.sentry.protocol.User();
     nativeUser.setId(user.id);
     nativeUser.setEmail(user.email ? user.email : '');
     nativeUser.setUsername(user.username ? user.username : '');
     if (nativeMapObject) {
       nativeUser.setOthers(nativeMapObject);
     }
-    io.sentry.core.Sentry.setUser(nativeUser);
+    io.sentry.Sentry.setUser(nativeUser);
+  }
+
+  public static setContextUser(user: User) {
+    this.setUser(user);
+  }
+
+  public static setTags(tags: object) {
+    Object.keys(tags).forEach(key => {
+      io.sentry.Sentry.setTag(key, tags[key].toString());
+    });
   }
 
   public static setContextTags(tags: object) {
-    Object.keys(tags).forEach(key => {
-      io.sentry.core.Sentry.setTag(key, tags[key].toString());
+    this.setTags(tags);
+  }
+
+  public static setExtras(extras: object) {
+    Object.keys(extras).forEach(key => {
+      // adding type check to not force toString on the extra
+      const nativeDataValue = Sentry._convertDataTypeToString(extras[key]);
+      io.sentry.Sentry.setExtra(key, nativeDataValue);
     });
   }
 
   public static setContextExtra(extra: object) {
-    Object.keys(extra).forEach(key => {
-      // adding type check to not force toString on the extra
-      const nativeDataValue = Sentry._convertDataTypeToString(extra[key]);
-      io.sentry.core.Sentry.setExtra(key, nativeDataValue);
-    });
+    this.setExtras(extra);
   }
 
   public static clearContext() {
-    // Nothing to do here?
+    const scopeCallBack = new io.sentry.ScopeCallback({
+      run: (scope) => {
+        scope.clear();
+      }
+    });
+
+    io.sentry.Sentry.configureScope(scopeCallBack);
   }
 
   /**
@@ -122,23 +138,19 @@ export class Sentry {
    * @default - INFO
    */
   private static _convertSentryEventLevel(level: Level) {
-    if (!level) {
-      return io.sentry.core.SentryLevel.INFO;
-    }
-
     switch (level) {
       case Level.Info:
-        return io.sentry.core.SentryLevel.INFO;
+        return io.sentry.SentryLevel.INFO;
       case Level.Warning:
-        return io.sentry.core.SentryLevel.WARNING;
+        return io.sentry.SentryLevel.WARNING;
       case Level.Fatal:
-        return io.sentry.core.SentryLevel.FATAL;
+        return io.sentry.SentryLevel.FATAL;
       case Level.Error:
-        return io.sentry.core.SentryLevel.ERROR;
+        return io.sentry.SentryLevel.ERROR;
       case Level.Debug:
-        return io.sentry.core.SentryLevel.DEBUG;
+        return io.sentry.SentryLevel.DEBUG;
       default:
-        return io.sentry.core.SentryLevel.INFO;
+        return io.sentry.SentryLevel.INFO;
     }
   }
 
