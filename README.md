@@ -191,6 +191,13 @@ To run and test the demo apps you need to replace the placeholder `__YOUR_DSN_HE
 
 ## Changelog
 
+### 2.1.0 - (20.05.2020)
+
+- vendor: update to sentry 4.3.0 (Android)
+- vendor: update to sentry 6.2.1 (iOS)
+
+Thanks to [Logikgate](https://github.com/Logikgate).
+
 ### 2.0.1 - (25.03.2021)
 
 - fix issues with Angular
